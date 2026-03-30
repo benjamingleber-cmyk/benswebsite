@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ben's Website</title>
+  <link rel="icon" href="https://www.google.com/favicon.ico" id="favicon"/>
+
+  <!-- Ultraviolet scripts - served by Railway after npm build -->
+  <script src="/uv/uv.bundle.js"></script>
+  <script src="/uv/uv.config.js"></script>
+  <script src="/baremux/index.js"></script>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/uv/sw.js", { scope: "/uv/service/" })
+          .then(() => console.log("UV service worker registered"))
+          .catch(e => console.error("SW error:", e));
+      });
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #18181c;
+      --surface2: #222228;
+      --border: #2e2e38;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --text: #f0f0f5;
+      --muted: #8888a0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--accent);
+      margin-right: 12px;
+    }
+
+    .nav-btn {
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .nav-btn:hover { background: var(--surface2); color: var(--text); }
+    .nav-btn.active { background: var(--accent); color: #fff; }
+
+    .spacer { flex: 1; }
+
+    .cloak-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .cloak-pill:hover { border-color: var(--accent); color: var(--text); }
+    .cloak-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; }
+
+    .page { display: none; flex: 1; overflow: hidden; }
+    .page.active { display: flex; flex-direction: column; }
+
+    /* BROWSER */
+    .browser-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .engine-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+
+    .engine-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .engine-tab:hover { background: var(--surface2); color: var(--text); }
+    .engine-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .url-bar {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 12px;
+      gap: 8px;
+    }
+
+    .url-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      padding: 8px 0;
+    }
+
+    .go-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .go-btn:hover { opacity: 0.85; }
+
+    .browser-frame { flex: 1; position: relative; }
+
+    #browser-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      display: none;
+    }
+
+    .browser-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--muted);
+    }
+
+    .search-engines-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .engine-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 16px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-width: 90px;
+    }
+    .engine-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .engine-card span { font-size: 12px; color: var(--muted); }
+    .engine-icon { font-size: 24px; }
+
+    /* HOME */
+    .home-page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 40px;
+    }
+
+    .home-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 52px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .home-sub { color: var(--muted); font-size: 16px; }
+
+    .home-cards {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .home-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 28px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      min-width: 140px;
+    }
+    .home-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .home-card .icon { font-size: 32px; margin-bottom: 8px; }
+    .home-card .label { font-size: 14px; color: var(--muted); }
+
+    /* GAMES */
+    .games-page { flex: 1; padding: 24px; overflow-y: auto; }
+
+    .games-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .game-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .game-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+    .game-card .g-icon { font-size: 36px; margin-bottom: 8px; }
+    .game-card .g-name { font-size: 14px; font-weight: 500; }
+    .game-card .g-tag { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* MODAL */
+    .modal-bg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-bg.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      width: 360px;
+      max-width: 90vw;
+    }
+
+    .modal h3 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .modal p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+
+    .cloak-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+    .cloak-opt {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 14px;
+    }
+    .cloak-opt:hover { border-color: var(--accent); background: var(--surface2); }
+    .cloak-opt.selected { border-color: var(--accent); background: rgba(108,99,255,0.12); }
+
+    .modal-close {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    #about-blank-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    #about-blank-btn:hover { border-color: var(--accent2); color: var(--text); }
+
+    .status-bar {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 4px 16px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">B</span>
+  <button class="nav-btn active" onclick="showPage('home')">Home</button>
+  <button class="nav-btn" onclick="showPage('browser')">Browse</button>
+  <button class="nav-btn" onclick="showPage('games')">Games</button>
+  <div class="spacer"></div>
+  <div class="cloak-pill" onclick="openCloakModal()">
+    <div class="cloak-dot"></div>
+    <span id="cloak-label">Tab: Ben's Website</span>
+  </div>
+</nav>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="home-page">
+    <div class="home-title">Ben's Website</div>
+    <div class="home-sub">Your personal space. Browse, play, explore.</div>
+    <div class="home-cards">
+      <div class="home-card" onclick="showPage('browser')">
+        <div class="icon">🌐</div>
+        <div style="font-weight:600;margin-bottom:4px;">Browse</div>
+        <div class="label">Search anything</div>
+      </div>
+      <div class="home-card" onclick="showPage('games')">
+        <div class="icon">🎮</div>
+        <div style="font-weight:600;margin-bottom:4px;">Games</div>
+        <div class="label">Play & chill</div>
+      </div>
+      <div class="home-card" onclick="openCloakModal()">
+        <div class="icon">🎭</div>
+        <div style="font-weight:600;margin-bottom:4px;">Tab Cloak</div>
+        <div class="label">Change tab title</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BROWSER -->
+<div class="page" id="page-browser">
+  <div class="browser-bar">
+    <div class="engine-tabs">
+      <button class="engine-tab active" onclick="setEngine('bing',this)">Bing</button>
+      <button class="engine-tab" onclick="setEngine('duckduckgo',this)">DuckDuckGo</button>
+      <button class="engine-tab" onclick="setEngine('yahoo',this)">Yahoo</button>
+      <button class="engine-tab" onclick="setEngine('google',this)">Google</button>
+      <button class="engine-tab" onclick="setEngine('url',this)">Direct URL</button>
+    </div>
+    <div class="url-bar">
+      <span style="color:var(--muted);font-size:13px;">🔍</span>
+      <input class="url-input" id="search-input" type="text" placeholder="Search or enter a URL..." onkeydown="handleKey(event)"/>
+      <button class="go-btn" onclick="doSearch()">Go</button>
+    </div>
+  </div>
+
+  <div class="browser-frame">
+    <iframe id="browser-iframe"></iframe>
+    <div class="browser-placeholder" id="browser-placeholder">
+      <div style="font-size:48px;">🌐</div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text);">Start browsing</div>
+      <div style="font-size:14px;margin-bottom:8px;">Powered by Ultraviolet — full proxy, no blocks</div>
+      <div class="search-engines-grid">
+        <div class="engine-card" onclick="quickLoad('https://www.bing.com')">
+          <div class="engine-icon">🔷</div>
+          <span>Bing</span>
+        </div>
+        <div class="engine-card" onclick="quickLoad('https://duckduckgo.com')">
+          <div class="engine-icon">🦆</div>
+          <span>DuckDuckGo</span>
+        </div>
+        <div class="engine-card" onclick="quickLoad('https://www.yahoo.com')">
+          <div class="engine-icon">🟣</div>
+          <span>Yahoo</span>
+        </div>
+        <div class="engine-card" onclick="quickLoad('https://www.google.com')">
+          <div class="engine-icon">🔵</div>
+          <span>Google</span>
+        </div>
+        <div class="engine-card" onclick="quickLoad('https://www.youtube.com')">
+          <div class="engine-icon">▶️</div>
+          <span>YouTube</span>
+        </div>
+        <div class="engine-card" onclick="quickLoad('https://www.reddit.com')">
+          <div class="engine-icon">🔴</div>
+          <span>Reddit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="status-bar" id="status-bar">Ready — UV proxy active</div>
+</div>
+
+<!-- GAMES -->
+<div class="page" id="page-games">
+  <div class="games-page">
+    <div class="games-title">🎮 Games</div>
+    <div class="games-grid">
+      <div class="game-card" onclick="openGame('https://www.coolmathgames.com/0-run-3')">
+        <div class="g-icon">🏃</div>
+        <div class="g-name">Run 3</div>
+        <div class="g-tag">Endless Runner</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://www.google.com/fbx?fbx=snake_arcade')">
+        <div class="g-icon">🐍</div>
+        <div class="g-name">Snake</div>
+        <div class="g-tag">Classic</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://www.coolmathgames.com/0-fireboy-and-watergirl-in-the-forest-temple')">
+        <div class="g-icon">🔥</div>
+        <div class="g-name">Fireboy & Watergirl</div>
+        <div class="g-tag">Puzzle</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://2048.org')">
+        <div class="g-icon">🔢</div>
+        <div class="g-name">2048</div>
+        <div class="g-tag">Puzzle</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://www.coolmathgames.com/0-slope')">
+        <div class="g-icon">⚡</div>
+        <div class="g-name">Slope</div>
+        <div class="g-tag">Reflexes</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://skribbl.io')">
+        <div class="g-icon">✏️</div>
+        <div class="g-name">Skribbl.io</div>
+        <div class="g-tag">Drawing</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://www.chess.com/play/computer')">
+        <div class="g-icon">♟️</div>
+        <div class="g-name">Chess</div>
+        <div class="g-tag">Strategy</div>
+      </div>
+      <div class="game-card" onclick="openGame('https://sploop.io')">
+        <div class="g-icon">🌀</div>
+        <div class="g-name">Sploop.io</div>
+        <div class="g-tag">Multiplayer</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CLOAK MODAL -->
+<div class="modal-bg" id="cloak-modal">
+  <div class="modal">
+    <h3>🎭 Tab Cloak</h3>
+    <p>Change what the browser tab shows.</p>
+    <div class="cloak-options">
+      <div class="cloak-opt selected" onclick="setCloak('Ben\'s Website','https://www.google.com/favicon.ico',this)">🌐 Ben's Website</div>
+      <div class="cloak-opt" onclick="setCloak('Home','https://ssl.gstatic.com/classroom/favicon.png',this)">🏠 Home</div>
+      <div class="cloak-opt" onclick="setCloak('Google Classroom','https://ssl.gstatic.com/classroom/favicon.png',this)">📚 Google Classroom</div>
+      <div class="cloak-opt" onclick="setCloak('Google Docs','https://ssl.gstatic.com/docs/documents/images/kix-favicon7.ico',this)">📄 Google Docs</div>
+      <div class="cloak-opt" onclick="setCloak('Khan Academy','https://www.khanacademy.org/favicon.ico',this)">🎓 Khan Academy</div>
+    </div>
+    <button id="about-blank-btn" onclick="openAboutBlank()">Open in about:blank (stealth mode)</button>
+    <button class="modal-close" onclick="closeCloakModal()">Done</button>
+  </div>
+</div>
+
+<script>
+  let currentEngine = 'bing';
+  let uvReady = false;
+
+  const searchEngines = {
+    bing: q => `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
+    duckduckgo: q => `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+    yahoo: q => `https://search.yahoo.com/search?p=${encodeURIComponent(q)}`,
+    google: q => `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+    url: q => q
+  };
+
+  // Check UV is ready
+  window.addEventListener('load', () => {
+    if (typeof __uv$config !== 'undefined') {
+      uvReady = true;
+      setStatus('UV proxy ready');
+    } else {
+      setStatus('Warning: UV not loaded - check Railway deployment');
+    }
+  });
+
+  function setStatus(msg) {
+    const el = document.getElementById('status-bar');
+    if (el) el.textContent = msg;
+  }
+
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const map = { home: 0, browser: 1, games: 2 };
+    document.querySelectorAll('.nav-btn')[map[name]].classList.add('active');
+  }
+
+  function setEngine(engine, btn) {
+    currentEngine = engine;
+    document.querySelectorAll('.engine-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter') doSearch();
+  }
+
+  function doSearch() {
+    let val = document.getElementById('search-input').value.trim();
+    if (!val) return;
+
+    let url;
+    if (currentEngine === 'url') {
+      url = val.startsWith('http') ? val : 'https://' + val;
+    } else if (val.includes('.') && !val.includes(' ')) {
+      url = val.startsWith('http') ? val : 'https://' + val;
+    } else {
+      url = searchEngines[currentEngine](val);
+    }
+
+    loadUV(url);
+  }
+
+  function quickLoad(url) {
+    loadUV(url);
+  }
+
+  function loadUV(url) {
+    const iframe = document.getElementById('browser-iframe');
+    const placeholder = document.getElementById('browser-placeholder');
+
+    if (!uvReady || typeof __uv$config === 'undefined') {
+      // Fallback — try direct iframe (works for non-blocked sites)
+      iframe.src = url;
+      iframe.style.display = 'block';
+      placeholder.style.display = 'none';
+      setStatus('Direct mode (UV not loaded) — deploy to Railway for full proxy');
+      return;
+    }
+
+    const encodedUrl = __uv$config.prefix + __uv$config.encodeUrl(url);
+    iframe.src = encodedUrl;
+    iframe.style.display = 'block';
+    placeholder.style.display = 'none';
+    setStatus('Loading via UV proxy: ' + url);
+
+    iframe.onload = () => setStatus('UV proxy — ' + url);
+  }
+
+  function openGame(url) {
+    showPage('browser');
+    loadUV(url);
+  }
+
+  // Tab cloak - auto rotates
+  const titles = ["Ben's Website", "Home", "Google Classroom"];
+  let titleIdx = 0;
+  const titleInterval = setInterval(() => {
+    titleIdx = (titleIdx + 1) % titles.length;
+    document.title = titles[titleIdx];
+  }, 4000);
+
+  function openCloakModal() {
+    document.getElementById('cloak-modal').classList.add('open');
+  }
+
+  function closeCloakModal() {
+    document.getElementById('cloak-modal').classList.remove('open');
+  }
+
+  function setCloak(title, faviconUrl, el) {
+    clearInterval(titleInterval);
+    document.title = title;
+    document.getElementById('favicon').href = faviconUrl;
+    document.getElementById('cloak-label').textContent = 'Tab: ' + title;
+    document.querySelectorAll('.cloak-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function openAboutBlank() {
+    const w = window.open('about:blank', '_blank');
+    const html = document.documentElement.outerHTML;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    closeCloakModal();
+  }
+
+  document.getElementById('cloak-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeCloakModal();
+  });
+</script>
+</body>
+</html>
